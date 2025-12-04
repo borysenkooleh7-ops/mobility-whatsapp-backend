@@ -13,15 +13,22 @@ class TwilioService {
   private phoneNumber: string;
 
   constructor() {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
+    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
     this.phoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
 
-    if (accountSid && authToken) {
-      this.client = twilio(accountSid, authToken);
-      logger.info('Twilio client initialized');
+    // Validate credentials before attempting to create client
+    // Twilio accountSid must start with "AC"
+    if (accountSid && authToken && accountSid.startsWith('AC')) {
+      try {
+        this.client = twilio(accountSid, authToken);
+        logger.info('Twilio client initialized');
+      } catch (error: any) {
+        logger.warn(`Failed to initialize Twilio client: ${error.message}`);
+        this.client = null;
+      }
     } else {
-      logger.warn('Twilio credentials not configured - Call Deflection disabled');
+      logger.warn('Twilio credentials not configured or invalid - Call Deflection disabled');
     }
   }
 
