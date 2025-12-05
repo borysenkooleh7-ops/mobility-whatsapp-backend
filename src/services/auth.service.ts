@@ -1,14 +1,14 @@
 import { PrismaClient, User, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
 
 const prisma = new PrismaClient();
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'mi-chame-jwt-secret-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const ACCESS_TOKEN_EXPIRY = 86400; // 1 day in seconds
+const REFRESH_TOKEN_EXPIRY = 604800; // 7 days in seconds
 
 // Token payload interface
 interface TokenPayload {
@@ -43,12 +43,14 @@ class AuthService {
 
   // Generate access token
   private generateAccessToken(payload: TokenPayload): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const options: SignOptions = { expiresIn: ACCESS_TOKEN_EXPIRY };
+    return jwt.sign(payload, JWT_SECRET, options);
   }
 
   // Generate refresh token
   private generateRefreshToken(payload: TokenPayload): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN });
+    const options: SignOptions = { expiresIn: REFRESH_TOKEN_EXPIRY };
+    return jwt.sign(payload, JWT_SECRET, options);
   }
 
   // Verify token
