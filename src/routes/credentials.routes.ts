@@ -89,8 +89,10 @@ router.post('/:service', authenticate, requireAdmin, async (req: Request, res: R
 
     res.json({
       success: true,
-      message: `${credArray.length} credentials saved for ${service}`,
-      savedKeys: credArray.map(c => c.key),
+      data: {
+        message: `${credArray.length} credentials saved for ${service}`,
+        savedKeys: credArray.map(c => c.key),
+      },
     });
   } catch (error: any) {
     logger.error('Error saving credentials:', error);
@@ -125,12 +127,15 @@ router.post('/:service/test', authenticate, requireAdmin, async (req: Request, r
     }
 
     res.json({
-      success: result.success,
-      service,
-      message: result.success
-        ? `${service} credentials verified successfully`
-        : `${service} credential verification failed`,
-      error: result.error,
+      success: true,
+      data: {
+        success: result.success,
+        service,
+        message: result.success
+          ? `${service} credentials verified successfully`
+          : `${service} credential verification failed`,
+        error: result.error,
+      },
     });
   } catch (error: any) {
     logger.error('Error testing credentials:', error);
@@ -147,7 +152,9 @@ router.delete('/:key', authenticate, requireAdmin, async (req: Request, res: Res
 
     res.json({
       success: true,
-      message: `Credential ${key} deleted`,
+      data: {
+        message: `Credential ${key} deleted`,
+      },
     });
   } catch (error: any) {
     logger.error('Error deleting credential:', error);
