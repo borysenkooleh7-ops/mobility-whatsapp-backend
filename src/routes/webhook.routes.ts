@@ -66,25 +66,31 @@ async function loadWhatsAppCredentials(): Promise<boolean> {
 // WhatsApp Cloud API Webhooks
 // =====================================================
 
+// Default verify token (must match what client configures in Meta)
+const DEFAULT_WEBHOOK_VERIFY_TOKEN = 'michame_verify_token_2024';
+
 // Webhook verification (GET request from Meta)
-router.get('/whatsapp', async (req: Request, res: Response) => {
-  const mode = req.query['hub.mode'] as string;
-  const token = req.query['hub.verify_token'] as string;
-  const challenge = req.query['hub.challenge'] as string;
+// This MUST be fast and reliable - no database dependency!
+router.get('/whatsapp', (req: Request, res: Response) => {
+  try {
+    const mode = req.query['hub.mode'] as string;
+    const token = req.query['hub.verify_token'] as string;
+    const challenge = req.query['hub.challenge'] as string;
 
-  logger.info(`WhatsApp webhook verification: mode=${mode}, token=${token ? token.substring(0, 10) + '...' : 'none'}, challenge=${challenge ? 'present' : 'none'}`);
+    logger.info(`WhatsApp webhook verification: mode=${mode}, token=${token}, challenge=${challenge}`);
 
-  // Load credentials from database before verification
-  await loadWhatsAppCredentials();
-
-  const result = whatsappService.verifyWebhook(mode, token, challenge);
-
-  if (result) {
-    logger.info('WhatsApp webhook verified successfully - returning challenge');
-    res.status(200).send(result);
-  } else {
-    logger.warn(`WhatsApp webhook verification failed - token mismatch or invalid mode`);
-    res.status(403).send('Verification failed');
+    // Simple verification - no database, no async operations
+    if (mode === 'subscribe' && token === DEFAULT_WEBHOOK_VERIFY_TOKEN) {
+      logger.info('WhatsApp webhook verified successfully - returning challenge');
+      // IMPORTANT: Return challenge as plain text, not JSON
+      res.status(200).send(challenge);
+    } else {
+      logger.warn(`WhatsApp webhook verification failed - mode=${mode}, expected token=${DEFAULT_WEBHOOK_VERIFY_TOKEN}, received token=${token}`);
+      res.status(403).send('Verification failed');
+    }
+  } catch (error: any) {
+    logger.error('Webhook verification error:', error);
+    res.status(500).send('Internal error');
   }
 });
 
